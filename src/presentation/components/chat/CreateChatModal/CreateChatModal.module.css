@@ -1,0 +1,127 @@
+/* CreateChatModal.module.css */
+.modal {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: #f8f9fa;
+    padding: 1.5rem;
+    border-radius: 8px;
+    max-width: 400px;
+    width: 90%;
+    outline: none;
+    border: 1px solid #dee2e6;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    display: flex;
+    flex-direction: column;
+}
+
+.overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(0, 0, 0, 0.5);
+    z-index: 1000;
+}
+
+.title {
+    padding: 5px;
+    font-weight: bold;
+    font-size: 1.5rem;
+    color: #212529;
+    text-align: center;
+    margin-bottom: 0.5rem;
+}
+
+.subtitle {
+    padding: 5px;
+    font-weight: bold;
+    font-size: 1.4rem;
+    color: #212529;
+    text-align: center;
+    margin: 0.5rem;
+}
+
+.userList {
+    margin: 0;
+    max-height: 300px;
+    overflow-y: auto;
+    background: white;
+    border-radius: 8px;
+    border: 1px solid #dee2e6;
+}
+
+.userItem {
+    padding: 12px 16px;
+    cursor: pointer;
+    border-bottom: 1px solid #e9ecef;
+    transition: background-color 0.2s ease;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.userItem:last-child {
+    border-bottom: none;
+}
+
+.userItem:hover {
+    background: #e9ecef;
+}
+
+.userItem.selected {
+    background: #dee2e6;
+    font-weight: bold;
+}
+
+.startButton {
+    display: block;
+    width: 100%;
+    padding: 0.75rem;
+    background-color: #007bff;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-size: 1rem;
+    cursor: pointer;
+    transition: background-color 0.3s;
+    margin-top: 1rem;
+    font-weight: 500;
+}
+
+.startButton:hover {
+    background: #0069d9;
+}
+
+.startButton:disabled {
+    background-color: #cccccc;
+    cursor: not-allowed;
+}
+
+.inputContainer {
+    margin-bottom: 1rem;
+}
+
+.input {
+    width: 100%;
+    padding: 0.75rem 1rem;
+    border: 1px solid #dee2e6;
+    border-radius: 8px;
+    font-size: 1rem;
+    transition: border-color 0.3s;
+    box-sizing: border-box;
+}
+
+.input:focus {
+    outline: none;
+    border-color: #007bff;
+    box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.25);
+}
+
+.checkmark {
+    color: #007bff;
+    font-weight: bold;
+    margin-left: 0.5rem;
+}

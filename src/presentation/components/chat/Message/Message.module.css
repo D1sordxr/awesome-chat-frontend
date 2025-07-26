@@ -1,0 +1,36 @@
+.message {
+    max-width: 70%;
+    padding: 8px 12px;
+    margin: 8px;
+    border-radius: 12px;
+    position: relative;
+}
+
+.myMessage {
+    align-self: flex-end;
+    background: #007bff;
+    color: white;
+}
+
+.otherMessage {
+    align-self: flex-start;
+    background: #e9ecef;
+    color: black;
+}
+
+.messageText {
+    word-wrap: break-word;
+}
+
+.messageTime {
+    font-size: 0.75rem;
+    text-align: right;
+    opacity: 0.7;
+    margin-top: 4px;
+}
+
+.senderName {
+    color: #2692ff;
+    font-weight: bold;
+}
+

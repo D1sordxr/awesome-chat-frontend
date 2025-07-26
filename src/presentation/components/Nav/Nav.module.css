@@ -1,0 +1,70 @@
+.navContainer {
+    background: linear-gradient(90deg, #0048b1, #5b9fff);
+    padding: 0 2rem;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+}
+
+.nav {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    height: 5vh;
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 1rem 0;
+}
+
+.navLeft,
+.navRight {
+    display: flex;
+    align-items: center;
+    gap: 1.5rem;
+}
+
+.navLink {
+    color: white;
+    text-decoration: none;
+    font-weight: 500;
+    font-size: 1.1rem;
+    transition: opacity 0.3s;
+}
+
+.navLink:hover {
+    opacity: 0.8;
+    text-decoration: underline;
+}
+
+.userGreeting {
+    color: white;
+    font-weight: 500;
+    margin-right: 1rem;
+}
+
+.defaultButton {
+    background: rgba(255, 255, 255, 0);
+    color: white;
+    border: none;
+    border-radius: 4px;
+    /*padding: 0.5rem 1rem;*/
+    font-size: 1rem;
+    cursor: pointer;
+    transition: background-color 0.3s;
+}
+
+.defaultButton:hover {
+    background: rgba(255, 255, 255, 0.1);
+}
+
+@media (max-width: 768px) {
+    .nav {
+        flex-direction: column;
+        padding: 1rem;
+        gap: 1rem;
+    }
+
+    .navLeft,
+    .navRight {
+        width: 100%;
+        justify-content: center;
+    }
+}

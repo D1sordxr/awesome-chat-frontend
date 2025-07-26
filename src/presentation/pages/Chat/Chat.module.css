@@ -1,0 +1,32 @@
+.app {
+    display: flex;
+    height: 95vh;
+}
+
+.chatContainer {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+}
+
+.chatHeader {
+    padding: 4px;
+    background-color: #f8f9fa;
+    border-bottom: 1px solid #dee2e6;
+    height: 8vh;
+}
+
+.chatName {
+    margin: 0;
+    padding: 0;
+    font-weight: bold;
+    font-size: 1.5em;
+}
+
+.participantsInfo {
+    font-size: 0.8rem;
+    color: #6c757d;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
