@@ -195,6 +195,7 @@ const Chat: React.FC<ChatProps> = ({ user_id }) => {
                 chats={chats}
                 currentChat={currentChat}
                 onSelectChat={setCurrentChat}
+                user_id={user_id}
             />
 
             <div className={styles.chatContainer}>

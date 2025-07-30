@@ -8,9 +8,10 @@ interface SidebarProps {
     chats: ChatPreview[];
     currentChat: ChatPreview | null;
     onSelectChat: (chat: ChatPreview) => void;
+    user_id: string;
 }
 
-const Sidebar = ({ chats, currentChat, onSelectChat }: SidebarProps) => {
+const Sidebar = ({ chats, currentChat, onSelectChat, user_id }: SidebarProps) => {
     const [isNewChatModalOpen, setIsNewChatModalOpen] = useState(false);
 
     return (
@@ -23,6 +24,7 @@ const Sidebar = ({ chats, currentChat, onSelectChat }: SidebarProps) => {
                 >New chat</button>
                 <CreateChatModal isNewChatModalOpen={isNewChatModalOpen}
                                  setIsNewChatModalOpen={setIsNewChatModalOpen}
+                                 user_id={user_id}
                 ></CreateChatModal>
             </div>
             <div className={styles.chatList}>

@@ -3,3 +3,7 @@ export interface User {
     username: string,
     email: string,
 }
+
+export interface UsersResponse {
+    users: User[],
+}

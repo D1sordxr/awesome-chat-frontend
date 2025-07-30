@@ -54,15 +54,36 @@
 }
 
 .userItem {
-    padding: 12px 16px;
     cursor: pointer;
     border-bottom: 1px solid #e9ecef;
     transition: background-color 0.2s ease;
+    padding: 8px 12px;
     display: flex;
     justify-content: space-between;
     align-items: center;
 }
 
+.userContent {
+    flex: 1;
+}
+
+.userName {
+    margin: 0;
+    font-weight: bold;
+}
+
+.userId {
+    margin: 2px 0 0 0;
+    font-size: 0.75rem;
+    color: #6c757d;
+}
+
+.checkmark {
+    color: #007bff;
+    font-weight: bold;
+    margin-left: 0.5rem;
+    font-size: 1.2rem;
+}
 .userItem:last-child {
     border-bottom: none;
 }
