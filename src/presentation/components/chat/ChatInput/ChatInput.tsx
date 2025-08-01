@@ -1,4 +1,4 @@
-import { useState, FormEvent } from 'react';
+import { useState, type FormEvent } from 'react';
 import styles from './ChatInput.module.css';
 
 interface ChatInputProps {

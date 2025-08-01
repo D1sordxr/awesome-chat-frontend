@@ -1,7 +1,6 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import styles from './Sidebar.module.css';
-import { ChatPreview } from "../../../../domain/core/entities/ChatPreview";
-import Modal from 'react-modal'
+import type { ChatPreview } from "../../../../domain/core/entities/ChatPreview";
 import CreateChatModal from "../CreateChatModal/CreateChatModal";
 
 interface SidebarProps {
@@ -40,7 +39,7 @@ const Sidebar = ({ chats, currentChat, onSelectChat, user_id }: SidebarProps) =>
                             <h3 className={styles.chatName}>{chat.name}</h3>
                             {chat.last_message && (
                                 <p className={styles.lastMessage}>
-                                    {chat.last_message.text}
+                                    {chat.last_message.content}
                                 </p>
                             )}
                         </div>

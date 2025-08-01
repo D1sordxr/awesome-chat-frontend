@@ -1,13 +1,14 @@
 import React, { useState } from 'react';
 import { Navigate } from 'react-router-dom';
-import { useAuth } from '../../../application/hooks/useAuth';
 import styles from './Login.module.css';
+import {useAuthContext} from "../../../application/auth/UseContext.ts";
 
 interface LoginProps {
     setName: (name: string) => void;
+    setID: (id: string) => void;
 }
 
-const Login: React.FC<LoginProps> = ({ setName }) => {
+const Login: React.FC<LoginProps> = ({ setName, setID }) => {
     const [formData, setFormData] = useState({
         email: '',
         password: ''
@@ -16,7 +17,7 @@ const Login: React.FC<LoginProps> = ({ setName }) => {
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [shouldRedirect, setShouldRedirect] = useState(false);
 
-    const auth = useAuth();
+    const auth = useAuthContext();
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const { name, value } = e.target;
@@ -29,8 +30,11 @@ const Login: React.FC<LoginProps> = ({ setName }) => {
         setError(null);
 
         try {
-            const user = await auth.login(formData.email, formData.password);
+            const user = await auth.authUseCase.login({
+                email:formData.email, password:formData.password
+            });
             setName(user.username);
+            setID("Если вы по какой либо воле случая увидели это сообщение, сделайте втык разработчику")
             setShouldRedirect(true);
         } catch (err) {
             setError(err instanceof Error ? err.message : 'Login failed');

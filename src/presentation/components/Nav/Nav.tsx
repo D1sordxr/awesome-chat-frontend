@@ -1,7 +1,7 @@
 import React from 'react';
-import { Link, useNavigate } from "react-router-dom"; // Добавлен useNavigate
-import { useAuth } from "../../../application/hooks/useAuth";
+import { Link, useNavigate } from "react-router-dom";
 import styles from './Nav.module.css';
+import {useAuthContext} from "../../../application/auth/UseContext.ts";
 
 interface NavProps {
     name: string;
@@ -9,12 +9,12 @@ interface NavProps {
 }
 
 const Nav: React.FC<NavProps> = ({ name, setName }) => {
-    const auth = useAuth();
+    const auth = useAuthContext();
     const navigate = useNavigate();
 
     const handleLogout = async () => {
         try {
-            await auth.logout();
+            await auth.authUseCase.logout();
             setName("");
             navigate("/login", { replace: true });
         } catch (error) {

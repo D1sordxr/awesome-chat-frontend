@@ -1,114 +1,83 @@
-import {ChatService} from "../../domain/core/ports/ChatService";
-import {ChatPreviewsResponse, Message} from "../../domain/core/entities/ChatPreview";
-import {User} from "../../domain/core/entities/User";
+import type { ChatService } from "../../domain/core/ports/ChatService";
+import type { ChatPreviewsResponse, Message } from "../../domain/core/entities/ChatPreview";
+import type { User } from "../../domain/core/entities/User";
+import type { ApiConfig } from "./Config.ts";
 
-export class ChatServiceImpl implements ChatService {
-    async getAllUsers(): Promise<User[]> {
+export const createChatServiceImpl = (config: ApiConfig): ChatService => {
+    const { baseUrl, errorService, getAuthToken } = config;
+
+    const fetchWithAuth = async (endpoint: string, options: RequestInit = {}) => {
         try {
-            const response = await fetch('http://localhost:8080/user/get-all', {
-                method: 'GET',
-                headers: {'Content-Type': 'application/json'}
+            const token = getAuthToken?.();
+            const response = await fetch(`${baseUrl}${endpoint}`, {
+                ...options,
+                headers: {
+                    'Content-Type': 'application/json',
+                    ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
+                    ...options.headers,
+                },
+                credentials: 'include',
             });
 
             if (!response.ok) {
-                const errorData = await response.json();
-                throw new Error(errorData.error || "Request failed");
+                const errorData = await errorService.parseErrorResponse(response);
+                throw new Error(errorData.message);
             }
 
-            const data = await response.json();
-
-            return data.users.map((user: any) => ({
-                id: user.user_id,
-                username: user.username,
-                email: user.email
-            }));
-
+            return response;
         } catch (error) {
+            errorService.handleError(error, `ChatService: ${endpoint}`);
             throw error;
         }
-    }
+    };
 
-    async getUserChatPreview(user_id: string): Promise<ChatPreviewsResponse> {
-        try {
-            const response = await fetch(`http://localhost:8080/chat/${user_id}`, {
-                method: "GET",
-                headers: {
-                    "Content-Type": "application/json",
-                    // TODO "Authorization": `Bearer ${localStorage.getItem('token')}`
-                },
-            });
-
-            if (!response.ok) {
-                const errorData = await response.json();
-                throw new Error(errorData.error || "Request failed");
-            }
-
-            return await response.json();
-
-        } catch (error) {
-            console.error("ChatService error:", error);
-            throw new Error("Failed to fetch chat previews");
-        }
-    }
-    async getChatAllMessages(chat_id: string): Promise<Message[]>{
-        try {
-            const response = await fetch(`http://localhost:8080/chat/messages/${chat_id}`, {
-                method: "GET",
-                headers: {"Content-Type": "application/json"},
-                // TODO "Authorization": `Bearer ${localStorage.getItem('token')}`
-            })
-
-            if (!response.ok) {
-                const errorData = await response.json();
-                throw new Error(errorData.error || "Request failed");
-            }
-
-            return await response.json();
-        } catch (error) {
-            console.error("ChatService error:", error);
-            throw new Error("Failed to fetch chat messages");
-        }
-    }
-    async sendSync(message: Message, chat_id:string):Promise<void> {
-        try {
-            const response = await fetch(`http://localhost:8080/message/send-sync`, {
-                method: "POST",
-                headers: {"Content-Type": "application/json"},
-                body: JSON.stringify({
-                    user_id:message.sender_id,
-                    chat_id: chat_id,
-                    content:message.text,
-                }),
-            })
-        } catch (error) {
-            console.error("ChatService error:", error);
-            throw new Error("Failed to fetch chat messages");
-        }
-    }
-    async createChat(chat_name:string, member_ids:string[]): Promise<void>{
-        try {
-            const response = await fetch(`http://localhost:8080/chat`, {
-                method: "POST",
-                headers: {"Content-Type": "application/json"},
-                body: JSON.stringify({
-                    name:chat_name,
-                    member_ids:member_ids,
-                }),
-
-            })
-            if (!response.ok) {
-                const errorData = await response.json();
-                throw new Error(errorData.error || "Request failed");
-            }
-
+    return {
+        async getAllUsers(): Promise<User[]> {
+            const response = await fetchWithAuth('/user/get-all', { method: 'GET' });
             const data = await response.json();
 
-            if (data.id === "") {
-                throw new Error(`Request failed`);
+            return data.users.map((user: User) => ({
+                user_id: user.user_id,
+                username: user.username,
+                email: user.email,
+            }));
+        },
+
+        async getUserChatPreview(user_id: string): Promise<ChatPreviewsResponse> {
+            console.log(`Trying to get user chat previews by path: ${baseUrl}/chat/${user_id}`);
+            const response = await fetchWithAuth(`/chat/${user_id}`);
+            return await response.json();
+        },
+
+        async getChatAllMessages(chat_id: string): Promise<Message[]> {
+            const response = await fetchWithAuth(`/chat/messages/${chat_id}`);
+            return response.json();
+        },
+
+        async sendSync(message: Message, chat_id: string): Promise<void> {
+            await fetchWithAuth('/message/send-sync', {
+                method: 'POST',
+                body: JSON.stringify({
+                    user_id: message.user_id,
+                    chat_id: chat_id,
+                    content: message.content,
+                }),
+            });
+        },
+
+        async createChat(chat_name: string, member_ids: string[]): Promise<void> {
+            const response = await fetchWithAuth('/chat', {
+                method: 'POST',
+                body: JSON.stringify({
+                    name: chat_name,
+                    member_ids: member_ids,
+                }),
+            });
+
+            const data = await response.json();
+            if (!data.id) {
+                throw new Error('Chat creation failed - no ID returned');
             }
-        } catch (error) {
-            console.error("ChatService error:", error);
-            throw new Error("Failed to create new chat");
-        }
-    }
-}
+        },
+    };
+};

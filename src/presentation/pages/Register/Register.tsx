@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Navigate } from 'react-router-dom';
 import styles from "./Register.module.css"
-import {useAuth} from "../../../application/hooks/useAuth";
+import {useAuthContext} from "../../../application/auth/UseContext.ts";
 
 const Register = () => {
     const [formData, setFormData] = useState({
@@ -13,7 +13,7 @@ const Register = () => {
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [shouldRedirect, setShouldRedirect] = useState(false);
 
-    const authUseCase = useAuth();
+    const auth = useAuthContext();
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const { name, value } = e.target;
@@ -26,11 +26,12 @@ const Register = () => {
         setError(null);
 
         try {
-            await authUseCase.register(
-                formData.username,
-                formData.email,
-                formData.password
-            );
+            await auth.authUseCase.register({
+                username:formData.username,
+                email:formData.email,
+                password:formData.password,
+            });
+
             setShouldRedirect(true);
         } catch (err) {
             setError(err instanceof Error ? err.message : 'Registration failed');

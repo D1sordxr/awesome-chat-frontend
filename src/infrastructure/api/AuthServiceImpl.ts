@@ -1,68 +1,67 @@
-import {AuthService} from "../../domain/core/ports/AuthService";
-import {User} from "../../domain/core/entities/User";
+import type { AuthService } from "../../domain/core/ports/AuthService";
+import type { User } from "../../domain/core/entities/User";
+import type { ApiConfig } from "./Config.ts";
 
-export class AuthServiceImpl implements AuthService {
-    async auth():Promise<User> {
-        const response = await fetch("http://localhost:8080/user/auth-jwt", {
-            method: "GET",
-            headers: { "Content-Type": "application/json" },
-            credentials: "include",
-        });
+export const createAuthServiceImpl = (config: ApiConfig): AuthService => {
+    const { baseUrl, errorService, getAuthToken } = config;
 
-        if (!response.ok) throw new Error("Auth failed");
-
-        return await response.json();
-    }
-    async register(username: string, email: string, password: string): Promise<void> {
-        const response = await fetch("http://localhost:8080/user/register", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ username, email, password }),
-        });
-
-        if (!response.ok) throw new Error("Registration failed");
-    }
-    async login(email: string, password: string): Promise<User> {
+    const fetchWithAuth = async (endpoint: string, options: RequestInit = {}) => {
         try {
-            const response = await fetch("http://localhost:8080/user/login", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                credentials: "include",
-                body: JSON.stringify({ email, password }),
+            const token = getAuthToken?.();
+            const response = await fetch(`${baseUrl}${endpoint}`, {
+                ...options,
+                headers: {
+                    'Content-Type': 'application/json',
+                    ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
+                    ...options.headers,
+                },
+                credentials: 'include',
             });
 
             if (!response.ok) {
-                const errorData = await this.parseErrorResponse(response);
-                throw new Error(errorData.message || "Login failed");
+                const errorData = await errorService.parseErrorResponse(response);
+                throw new Error(errorData.message);
             }
 
-            return await response.json();
+            return response;
         } catch (error) {
-            console.error("Login error:", error);
-            throw this.normalizeError(error);
+            errorService.handleError(error, `AuthService: ${endpoint}`);
+            throw error;
         }
-    }
-    async logout():Promise<void>{
-        const response = await fetch("http://localhost:8080/user/logout", {
-            method: "GET",
-            headers: { "Content-Type": "application/json" },
-            credentials: "include",
-        });
+    };
 
-        if (!response.ok) throw new Error("Logout failed");
-    }
+    return {
+        async auth(): Promise<User> {
+            const response = await fetchWithAuth('/user/auth-jwt', { method: 'GET' });
+            const data = await response.json()
+            return {user_id:data.id, username: data.username} as User;
+        },
 
-    private async parseErrorResponse(response: Response): Promise<{ message: string }> {
-        try {
-            return await response.json();
-        } catch {
-            return { message: `HTTP ${response.status}: ${response.statusText}` };
-        }
-    }
+        async register(username: string, email: string, password: string): Promise<void> {
+            await fetchWithAuth('/user/register', {
+                method: 'POST',
+                body: JSON.stringify({ username, email, password }),
+            });
+        },
 
-    private normalizeError(error: unknown): Error {
-        if (error instanceof Error) return error;
-        return new Error(String(error));
-    }
-}
+        async login(email: string, password: string): Promise<User> {
+            const response = await fetchWithAuth('/user/login', {
+                method: 'POST',
+                body: JSON.stringify({ email, password }),
+            });
+
+            const data = await response.json();
+
+            return {
+                user_id: data.user_id,
+                username: data.username,
+                token: data.token
+            } as User;
+        },
+
+        async logout(): Promise<void> {
+            await fetchWithAuth('/user/logout', { method: 'GET' });
+        },
+    };
+};
 

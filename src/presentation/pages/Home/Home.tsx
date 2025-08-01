@@ -1,21 +1,24 @@
 import React from 'react';
 import styles from './Home.module.css';
-import {useAuth} from "../../../application/hooks/useAuth";
 import {useNavigate} from "react-router-dom";
+import {useAuthContext} from "../../../application/auth/UseContext.ts";
 
 interface HomeProps {
+    id: string;
+    setID: (id:string) => void;
     name: string;
     setName: (name: string) => void;
 }
 
-const Home: React.FC<HomeProps> = ({ name, setName }) => {
-    const auth = useAuth();
+const Home: React.FC<HomeProps> = ({ id, setID ,name, setName }) => {
+    const auth = useAuthContext();
     const navigate = useNavigate();
 
     const handleLogout = async () => {
         try {
-            await auth.logout();
+            await auth.authUseCase.logout();
             setName("");
+            setID("");
             navigate("/login", { replace: true });
         } catch (error) {
             console.error("Logout failed:", error);
@@ -30,6 +33,7 @@ const Home: React.FC<HomeProps> = ({ name, setName }) => {
                         <h1 className={styles.greeting}>
                             Welcome back, <span className={styles.username}>{name}</span>!
                         </h1>
+                        <p className={styles.subtext}>{id ? (`Your personal ID: ${id}`) : ("Failed to get your id")}</p>
                         <p className={styles.subtext}>You're now authenticated and ready to go</p>
                         <button
                             onClick={handleLogout}

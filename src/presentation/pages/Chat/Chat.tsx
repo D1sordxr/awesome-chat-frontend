@@ -1,19 +1,21 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect } from 'react';
 import Sidebar from '../../components/chat/Sidebar/Sidebar';
 import MessageList from '../../components/chat/MessageList/MessageList';
 import ChatInput from '../../components/chat/ChatInput/ChatInput';
 import styles from './Chat.module.css';
-import { useChat } from "../../../application/hooks/useChat";
-import { ChatPreview, Message } from '../../../domain/core/entities/ChatPreview';
-import { WSClientImpl } from "../../../infrastructure/api/ChatWS";
-import {WSClient, WSMessage, WsMessageData} from "../../../domain/core/entities/WSClient";
+import {useChatContext} from "../../../application/chat/UseContext.ts";
+import type { ChatPreview, Message } from "../../../domain/core/entities/ChatPreview.ts";
+import {useWebSocketContext} from "../../../application/ws/UseContext.ts";
+import type {WSMessage, WsMessageData} from "../../../domain/core/entities/WSClient.ts";
 
 interface ChatProps {
     user_id: string;
 }
 
 const Chat: React.FC<ChatProps> = ({ user_id }) => {
-    const chatUseCase = useChat();
+    const chatContext = useChatContext();
+    const wsContext = useWebSocketContext();
+
     const [currentChat, setCurrentChat] = useState<ChatPreview | null>(null);
     const [messages, setMessages] = useState<Message[]>([]);
     const [chats, setChats] = useState<ChatPreview[]>([]);
@@ -22,8 +24,6 @@ const Chat: React.FC<ChatProps> = ({ user_id }) => {
         messages: false
     });
     const [error, setError] = useState<string | null>(null);
-    const [chatIds, setChatIds] = useState<string[]>([]);
-    const [wsClient, setWsClient] = useState<WSClient | null>(null);
 
     useEffect(() => {
         const loadChats = async () => {
@@ -31,9 +31,8 @@ const Chat: React.FC<ChatProps> = ({ user_id }) => {
                 setLoading(prev => ({ ...prev, chats: true }));
                 setError(null);
 
-                const response = await chatUseCase.getUserChatPreview(user_id);
+                const response = await chatContext.chatUseCase.getUserChatPreview(user_id);
                 setChats(response.chat_previews);
-                setChatIds(response.chat_previews.map(chat => chat.chat_id));
 
                 if (response.chat_previews.length > 0 && !currentChat) {
                     setCurrentChat(response.chat_previews[0]);
@@ -47,9 +46,9 @@ const Chat: React.FC<ChatProps> = ({ user_id }) => {
         };
 
         loadChats();
-    }, [user_id, chatUseCase]);
+    }, [user_id, chatContext, currentChat]);
 
-    // Загрузка сообщений при смене чата
+
     useEffect(() => {
         if (!currentChat) return;
 
@@ -58,10 +57,10 @@ const Chat: React.FC<ChatProps> = ({ user_id }) => {
                 setLoading(prev => ({ ...prev, messages: true }));
                 setError(null);
 
-                const messages: Message[] = await chatUseCase.getChatAllMessages(currentChat.chat_id);
+                const messages: Message[] = await chatContext.chatUseCase.getChatAllMessages(currentChat.chat_id);
                 const processedMessages: Message[] = messages.map(message => ({
                     ...message,
-                    isMe: message.sender_id === user_id
+                    isMe: message.user_id === user_id
                 })).reverse();
 
                 setMessages(processedMessages);
@@ -74,37 +73,32 @@ const Chat: React.FC<ChatProps> = ({ user_id }) => {
         };
 
         loadMessages();
-    }, [currentChat, user_id]);
+    }, [currentChat, user_id, chatContext]);
 
-    // Инициализация WebSocket
     useEffect(() => {
         if (!user_id || !currentChat) return;
 
-        const client = new WSClientImpl(`ws://localhost:8081/ws/${user_id}`);
-        setWsClient(client);
+        wsContext.client.connect(user_id);
 
         const handleNewMessage = (msg: WSMessage) => {
             console.log('New WS message:', msg);
 
             try {
-                // 1. Используем сообщение как данные
                 const messageData = msg as unknown as WsMessageData;
 
-                // 2. Проверяем, что сообщение относится к текущему чату
                 if (messageData.chat_id !== currentChat.chat_id) {
                     console.log('Message for another chat, ignoring');
                     return;
                 }
 
-                // 3. Создаем новое сообщение
                 const newMessage: Message = {
-                    sender_id: messageData.user_id,
-                    text: messageData.content,
+                    user_id: messageData.user_id,
+                    content: messageData.content,
                     timestamp: new Date().toISOString(),
                     isMe: user_id === messageData.user_id
                 };
 
-                if (user_id === newMessage.sender_id) {
+                if (user_id === newMessage.user_id) {
                     console.log('Skipping message', newMessage);
                 } else {
                     console.log('Adding new message', newMessage);
@@ -116,8 +110,8 @@ const Chat: React.FC<ChatProps> = ({ user_id }) => {
                         ? {
                             ...chat,
                             last_message: {
-                                text: messageData.content,
-                                sender_id: messageData.user_id,
+                                content: messageData.content,
+                                user_id: messageData.user_id,
                                 timestamp: new Date().toISOString()
                             }
                         }
@@ -128,24 +122,24 @@ const Chat: React.FC<ChatProps> = ({ user_id }) => {
             }
         };
 
-        client.onMessage(handleNewMessage);
+        wsContext.client.onMessage(handleNewMessage);
 
-        client.connect().catch((err) => {
+        wsContext.client.connect(user_id).catch((err) => {
             console.error("WebSocket connection error:", err);
         });
 
         return () => {
-            client.disconnect();
+            wsContext.client.disconnect();
         };
-    }, [user_id, currentChat]);
+    }, [user_id, currentChat, wsContext.client]);
 
     const handleSendMessage = async (text: string) => {
         if (!text.trim() || !currentChat) return;
 
         try {
             const newMessage: Message = {
-                text,
-                sender_id: user_id,
+                content: text,
+                user_id: user_id,
                 timestamp: new Date().toISOString(),
                 isMe: true
             };
@@ -157,15 +151,15 @@ const Chat: React.FC<ChatProps> = ({ user_id }) => {
                     ? {
                         ...chat,
                         last_message: {
-                            text,
-                            sender_id: user_id,
+                            content: text,
+                            user_id: user_id,
                             timestamp: new Date().toISOString()
                         }
                     }
                     : chat
             ));
 
-            await chatUseCase.sendSync(newMessage, currentChat.chat_id);
+            await chatContext.chatUseCase.sendSync(newMessage, currentChat.chat_id);
         } catch (err) {
             console.error('Failed to send message:', err);
             setMessages(prev => prev.slice(0, -1));

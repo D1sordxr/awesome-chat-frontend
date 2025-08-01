@@ -12,8 +12,9 @@ export interface ChatPreview {
 }
 
 export interface Message {
-    sender_id: string;
-    text: string;
+    user_id: string;
+    chat_id?: string;
+    content: string;
     timestamp: string;
     isMe?: boolean;
 }

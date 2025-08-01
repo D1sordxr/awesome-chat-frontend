@@ -1,6 +1,6 @@
 import styles from './MessageList.module.css';
 import MessageComponent from "../Message/Message";
-import { Message, Participant } from "../../../../domain/core/entities/ChatPreview";
+import type { Message, Participant } from "../../../../domain/core/entities/ChatPreview";
 
 interface MessageListProps {
     messages: Message[];
@@ -13,10 +13,10 @@ const MessageList = ({ messages, currentUserId, participants }: MessageListProps
         <div className={styles.messageList}>
             {messages.map((message, index) => (
                 <MessageComponent
-                    key={`${message.sender_id}-${index}`}
+                    key={`${message.user_id}-${index}`}
                     message={{
                         ...message,
-                        isMe: message.sender_id === currentUserId
+                        isMe: message.user_id === currentUserId
                     }}
                     participants={participants}
                 />

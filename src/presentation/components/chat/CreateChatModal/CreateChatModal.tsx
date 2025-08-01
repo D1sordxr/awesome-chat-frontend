@@ -1,8 +1,8 @@
 import React, {useEffect, useState} from "react";
 import Modal from "react-modal";
 import styles from "./CreateChatModal.module.css";
-import {User} from "../../../../domain/core/entities/User";
-import {useChat} from "../../../../application/hooks/useChat";
+import type {User} from "../../../../domain/core/entities/User";
+import {useChatContext} from "../../../../application/chat/UseContext.ts";
 
 interface CreateChatModalProps {
     isNewChatModalOpen: boolean;
@@ -15,9 +15,8 @@ const CreateChatModal: React.FC<CreateChatModalProps> = ({
                                                              setIsNewChatModalOpen,
                                                              user_id,
                                                          }: CreateChatModalProps) => {
-    const chatUseCase = useChat();
+    const chatContext = useChatContext();
     const [selectedUsers, setSelectedUsers] = useState<string[]>([]);
-    const [participants, setParticipants] = useState<User[]>([]);
     const [users, setUsers] = useState<User[]>([]);
     const [newChatName, setNewChatName] = useState('');
     const [isLoading, setIsLoading] = useState(false);
@@ -25,7 +24,7 @@ const CreateChatModal: React.FC<CreateChatModalProps> = ({
 
     const handleChatCreate = async (): Promise<void> => {
         const member_ids: string[] = [user_id, ...selectedUsers];
-        await chatUseCase.createChat(newChatName, member_ids);
+        await chatContext.chatUseCase.createChat(newChatName, member_ids);
         window.location.reload(); // TODO change to callbacks (must change)
     }
 
@@ -34,8 +33,8 @@ const CreateChatModal: React.FC<CreateChatModalProps> = ({
             setIsLoading(true);
             setError(null);
             try {
-                const fetchedUsers = await chatUseCase.getAllUsers();
-                setUsers(fetchedUsers.filter(user => user.id !== user_id));
+                const fetchedUsers = await chatContext.chatUseCase.getAllUsers();
+                setUsers(fetchedUsers.filter(user => user.user_id !== user_id));
             } catch (err) {
                 setError(err instanceof Error ? err.message : 'Failed to load users');
                 console.error('Error fetching users:', err);
@@ -47,7 +46,7 @@ const CreateChatModal: React.FC<CreateChatModalProps> = ({
         if (isNewChatModalOpen) {
             fetchUsers();
         }
-    }, [isNewChatModalOpen, chatUseCase, user_id]);
+    }, [isNewChatModalOpen, chatContext, user_id]);
 
     const handleUserSelect = (userId: string) => {
         setSelectedUsers(prev => {
@@ -57,17 +56,6 @@ const CreateChatModal: React.FC<CreateChatModalProps> = ({
                 return [...prev, userId];
             }
         });
-
-        const selected = users.find(user => user.id === userId);
-        if (selected) {
-            setParticipants(prev => {
-                if (prev.some(user => user.id === userId)) {
-                    return prev.filter(user => user.id !== userId);
-                } else {
-                    return [...prev, selected];
-                }
-            });
-        }
     };
 
     return (
@@ -76,7 +64,6 @@ const CreateChatModal: React.FC<CreateChatModalProps> = ({
             onRequestClose={() => {
                 setIsNewChatModalOpen(false);
                 setSelectedUsers([]);
-                setParticipants([]);
                 setNewChatName('');
             }}
             contentLabel="Start New Chat"
@@ -104,14 +91,14 @@ const CreateChatModal: React.FC<CreateChatModalProps> = ({
             ) : (
                 <div className={styles.userList}>
                     {users
-                        .filter(user => user.id !== user_id)
+                        .filter(user => user.user_id !== user_id)
                         .map((user) => (
                             <div
-                                key={user.id}
+                                key={user.user_id}
                                 className={`${styles.userItem} ${
-                                    selectedUsers.includes(user.id) ? styles.selected : ''
+                                    selectedUsers.includes(user.user_id) ? styles.selected : ''
                                 }`}
-                                onClick={() => handleUserSelect(user.id)}
+                                onClick={() => handleUserSelect(user.username)}
                             >
                                 <div className={styles.userContent}>
                                     {user.username ? (
@@ -120,9 +107,9 @@ const CreateChatModal: React.FC<CreateChatModalProps> = ({
                                         textDecoration: 'underline dotted',
                                         opacity: 0.3
                                     }}>unnamed</p>}
-                                    <p className={styles.userId}>{user.id}</p>
+                                    <p className={styles.userId}>{user.user_id}</p>
                                 </div>
-                                {selectedUsers.includes(user.id) && (
+                                {selectedUsers.includes(user.user_id) && (
                                     <span className={styles.checkmark}>✓</span>
                                 )}
                             </div>
@@ -138,7 +125,6 @@ const CreateChatModal: React.FC<CreateChatModalProps> = ({
                         await handleChatCreate();
                         setIsNewChatModalOpen(false);
                         setSelectedUsers([]);
-                        setParticipants([]);
                         setNewChatName('');
                     }
                 }}

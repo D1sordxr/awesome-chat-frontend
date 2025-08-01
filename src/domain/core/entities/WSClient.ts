@@ -11,7 +11,8 @@ export type WsMessageData = {
 }
 
 export interface WSClient {
-    connect(): Promise<void>;
+    connect(user_id:string): Promise<void>;
     disconnect(): void;
     onMessage(callback: (msg: WSMessage) => void): void;
+    send(message: WSMessage):void;
 }

@@ -1,9 +1,13 @@
-export interface User {
-    id: string,
+interface User {
+    user_id: string,
     username: string,
     email: string,
+    password: string,
+    token: string,
 }
 
-export interface UsersResponse {
-    users: User[], //
+interface Users {
+    users: User[],
 }
+
+export type { User, Users };
