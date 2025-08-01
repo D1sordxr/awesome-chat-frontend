@@ -48,7 +48,6 @@ const Chat: React.FC<ChatProps> = ({ user_id }) => {
         loadChats();
     }, [user_id, chatContext, currentChat]);
 
-
     useEffect(() => {
         if (!currentChat) return;
 
@@ -167,22 +166,6 @@ const Chat: React.FC<ChatProps> = ({ user_id }) => {
         }
     };
 
-    if (loading.chats && chats.length === 0) {
-        return (
-            <div className={styles.loadingContainer}>
-                <p>Загрузка чатов...</p>
-            </div>
-        );
-    }
-
-    if (error && chats.length === 0) {
-        return (
-            <div className={styles.errorContainer}>
-                <>{error}</>
-            </div>
-        );
-    }
-
     return (
         <div className={styles.app}>
             <Sidebar
@@ -190,10 +173,19 @@ const Chat: React.FC<ChatProps> = ({ user_id }) => {
                 currentChat={currentChat}
                 onSelectChat={setCurrentChat}
                 user_id={user_id}
+                // isLoading={loading.chats}
             />
 
             <div className={styles.chatContainer}>
-                {currentChat ? (
+                {loading.chats && chats.length === 0 ? (
+                    <div className={styles.loadingRight}>
+                        <p>Загрузка чатов...</p>
+                    </div>
+                ) : error && chats.length === 0 ? (
+                    <div className={styles.errorRight}>
+                        {error}
+                    </div>
+                ) : currentChat ? (
                     <>
                         <div className={styles.chatHeader}>
                             <p className={styles.chatName}>{currentChat.name}</p>
@@ -201,9 +193,13 @@ const Chat: React.FC<ChatProps> = ({ user_id }) => {
                         </div>
 
                         {loading.messages ? (
-                            <></>
+                            <div className={styles.loadingMessages}>
+                                <p>Загрузка сообщений...</p>
+                            </div>
                         ) : error ? (
-                            <> {error} </>
+                            <div className={styles.errorMessages}>
+                                {error}
+                            </div>
                         ) : (
                             <MessageList
                                 messages={messages}
