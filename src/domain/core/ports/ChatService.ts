@@ -6,5 +6,5 @@ export interface ChatService {
     getChatAllMessages(chat_id: string): Promise<Message[]>;
     sendSync(message: Message, chat_id:string):Promise<void>;
     getAllUsers(): Promise<User[]>
-    createChat(chat_name:string, member_ids:string[]):Promise<void>
+    createChat(chat_name:string, member_ids:string[]):Promise<string>
 }

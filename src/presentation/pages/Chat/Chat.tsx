@@ -231,6 +231,7 @@ const Chat: React.FC<ChatProps> = ({ user_id }) => {
         <div className={styles.app}>
             <Sidebar
                 chats={chats}
+                setChats={setChats}
                 currentChat={currentChat}
                 onSelectChat={setCurrentChat}
                 user_id={user_id}
@@ -271,6 +272,7 @@ const Chat: React.FC<ChatProps> = ({ user_id }) => {
 
                         <ChatInput
                             onSend={handleSendMessage}
+                            currentChat={currentChat}
                         />
                     </>
                 ) : (

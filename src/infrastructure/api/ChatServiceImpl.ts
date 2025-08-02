@@ -65,7 +65,7 @@ export const createChatServiceImpl = (config: ApiConfig): ChatService => {
             });
         },
 
-        async createChat(chat_name: string, member_ids: string[]): Promise<void> {
+        async createChat(chat_name: string, member_ids: string[]): Promise<string> {
             const response = await fetchWithAuth('/chat', {
                 method: 'POST',
                 body: JSON.stringify({
@@ -78,6 +78,8 @@ export const createChatServiceImpl = (config: ApiConfig): ChatService => {
             if (!data.id) {
                 throw new Error('Chat creation failed - no ID returned');
             }
+
+            return data.id
         },
     };
 };

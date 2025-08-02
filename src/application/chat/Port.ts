@@ -5,6 +5,6 @@ export interface ChatUseCase {
     getUserChatPreview(userId: string): Promise<ChatPreviewsResponse>;
     getChatAllMessages(chatId: string): Promise<Message[]>;
     getAllUsers(): Promise<User[]>;
-    createChat(chatName: string, memberIds: string[]): Promise<void>;
+    createChat(chatName: string, memberIds: string[]): Promise<string>;
     sendSync(message: Message, chatId: string): Promise<void>;
 }

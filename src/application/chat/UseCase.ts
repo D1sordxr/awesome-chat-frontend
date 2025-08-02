@@ -22,7 +22,7 @@ export const createChatUseCase = (chatService: ChatService): ChatUseCase => {
             }as User));
         },
 
-        async createChat(chatName: string, memberIds: string[]): Promise<void> {
+        async createChat(chatName: string, memberIds: string[]): Promise<string> {
             if (!chatName?.trim() || memberIds.length === 0) {
                 throw new Error('Chat name and members are required');
             }

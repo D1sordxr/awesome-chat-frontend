@@ -5,12 +5,13 @@ import CreateChatModal from "../CreateChatModal/CreateChatModal";
 
 interface SidebarProps {
     chats: ChatPreview[];
+    setChats: (chats: ChatPreview[]) => void;
     currentChat: ChatPreview | null;
     onSelectChat: (chat: ChatPreview) => void;
     user_id: string;
 }
 
-const Sidebar = ({ chats, currentChat, onSelectChat, user_id }: SidebarProps) => {
+const Sidebar = ({ chats, setChats, currentChat, onSelectChat, user_id }: SidebarProps) => {
     const [isNewChatModalOpen, setIsNewChatModalOpen] = useState(false);
 
     return (
@@ -21,9 +22,12 @@ const Sidebar = ({ chats, currentChat, onSelectChat, user_id }: SidebarProps) =>
                     className={styles.newChatButton}
                     onClick={() => setIsNewChatModalOpen(true)}
                 >New chat</button>
-                <CreateChatModal isNewChatModalOpen={isNewChatModalOpen}
-                                 setIsNewChatModalOpen={setIsNewChatModalOpen}
-                                 user_id={user_id}
+                <CreateChatModal
+                    isNewChatModalOpen={isNewChatModalOpen}
+                    setIsNewChatModalOpen={setIsNewChatModalOpen}
+                    user_id={user_id}
+                    chats={chats}
+                    setChats={setChats}
                 ></CreateChatModal>
             </div>
             <div className={styles.chatList}>
