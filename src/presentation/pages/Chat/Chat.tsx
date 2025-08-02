@@ -32,7 +32,24 @@ const Chat: React.FC<ChatProps> = ({ user_id }) => {
                 setError(null);
 
                 const response = await chatContext.chatUseCase.getUserChatPreview(user_id);
-                setChats(response.chat_previews);
+                let previews = response.chat_previews
+
+                    if (response.chat_previews.length > 1) {
+                    previews = response.chat_previews.sort((a, b) => {
+                        const getSafeTime = (msg: Message) => {
+                            if (!msg?.timestamp) return 0;
+                            const date = new Date(msg.timestamp);
+                            return isNaN(date.getTime()) ? 0 : date.getTime();
+                        };
+
+                        const timeA = getSafeTime(a.last_message as Message);
+                        const timeB = getSafeTime(b.last_message as Message);
+
+                        return timeB - timeA;
+                    });
+                }
+
+                setChats(previews);
 
                 if (response.chat_previews.length > 0 && !currentChat) {
                     setCurrentChat(response.chat_previews[0]);
@@ -85,8 +102,36 @@ const Chat: React.FC<ChatProps> = ({ user_id }) => {
             try {
                 const messageData = msg as unknown as WsMessageData;
 
-                if (messageData.chat_id !== currentChat.chat_id) {
+                if (messageData.chat_id !== currentChat?.chat_id) {
                     console.log('Message for another chat, ignoring');
+                    setChats(prevChats => {
+                        const updatedChats = prevChats.map(chat =>
+                            chat.chat_id === messageData.chat_id
+                                ? {
+                                    ...chat,
+                                    last_message: {
+                                        content: messageData.content,
+                                        user_id: messageData.user_id,
+                                        timestamp: new Date().toISOString(),
+                                    },
+                                }
+                                : chat
+                        );
+
+                        const sortedChats = [...updatedChats].sort((a, b) => {
+                            const getTime = (chat: ChatPreview) =>
+                                chat.last_message?.timestamp
+                                    ? new Date(chat.last_message.timestamp).getTime()
+                                    : 0;
+                            return getTime(b) - getTime(a);
+                        });
+
+                        if (sortedChats[0]?.chat_id !== currentChat?.chat_id) {
+                            setCurrentChat(sortedChats[0]);
+                        }
+
+                        return sortedChats;
+                    });
                     return;
                 }
 
@@ -94,7 +139,7 @@ const Chat: React.FC<ChatProps> = ({ user_id }) => {
                     user_id: messageData.user_id,
                     content: messageData.content,
                     timestamp: new Date().toISOString(),
-                    isMe: user_id === messageData.user_id
+                    isMe: user_id === messageData.user_id,
                 };
 
                 if (user_id === newMessage.user_id) {
@@ -104,18 +149,34 @@ const Chat: React.FC<ChatProps> = ({ user_id }) => {
                     setMessages(prev => [...prev, newMessage]);
                 }
 
-                setChats(prev => prev.map(chat =>
-                    chat.chat_id === currentChat.chat_id
-                        ? {
-                            ...chat,
-                            last_message: {
-                                content: messageData.content,
-                                user_id: messageData.user_id,
-                                timestamp: new Date().toISOString()
+                setChats(prevChats => {
+                    const updatedChats = prevChats.map(chat =>
+                        chat.chat_id === currentChat.chat_id
+                            ? {
+                                ...chat,
+                                last_message: {
+                                    content: messageData.content,
+                                    user_id: messageData.user_id,
+                                    timestamp: new Date().toISOString(),
+                                },
                             }
-                        }
-                        : chat
-                ));
+                            : chat
+                    );
+
+                    const sortedChats = [...updatedChats].sort((a, b) => {
+                        const getTime = (chat: ChatPreview) =>
+                            chat.last_message?.timestamp
+                                ? new Date(chat.last_message.timestamp).getTime()
+                                : 0;
+                        return getTime(b) - getTime(a);
+                    });
+
+                    if (sortedChats[0]?.chat_id !== currentChat.chat_id) {
+                        setCurrentChat(sortedChats[0]);
+                    }
+
+                    return sortedChats;
+                });
             } catch (err) {
                 console.error('Error processing WS message:', err);
             }
