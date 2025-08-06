@@ -34,7 +34,7 @@ const Login: React.FC<LoginProps> = ({ setName, setID }) => {
                 email:formData.email, password:formData.password
             });
             setName(user.username);
-            setID("Если вы по какой либо воле случая увидели это сообщение, сделайте втык разработчику")
+            setID(user.user_id);
             setShouldRedirect(true);
         } catch (err) {
             setError(err instanceof Error ? err.message : 'Login failed');

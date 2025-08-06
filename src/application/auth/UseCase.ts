@@ -31,6 +31,7 @@ export const createAuthUseCase = (authService: AuthService) => {
             const user:User = await authService.login(credentials.email, credentials.password);
 
             return {
+                user_id: user.user_id,
                 username:user.username,
                 token: user.token,
             } as LoginResponse;

@@ -171,9 +171,9 @@ const Chat: React.FC<ChatProps> = ({ user_id }) => {
                         return getTime(b) - getTime(a);
                     });
 
-                    if (sortedChats[0]?.chat_id !== currentChat.chat_id) {
-                        setCurrentChat(sortedChats[0]);
-                    }
+                    // if (sortedChats[0]?.chat_id !== currentChat.chat_id) {
+                    //     setCurrentChat(sortedChats[0]);
+                    // }
 
                     return sortedChats;
                 });
