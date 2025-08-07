@@ -1,9 +1,9 @@
 import React from 'react';
-import type { WSClient } from "../../domain/core/entities/WSClient";
+import type { WebSocketService } from "../../domain/core/entities/WebSocket.ts";
 import { WebSocketContext } from './UseContext';
 
 interface WebSocketProviderProps {
-    client: WSClient;
+    client: WebSocketService;
     children: React.ReactNode;
 }
 

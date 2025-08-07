@@ -1,97 +1,149 @@
-import type { WSClient, WSMessage } from "../../domain/core/entities/WSClient";
+import type { WebSocketService } from "../../domain/core/ports/WebSocketService.ts";
+import type {
+    Operation,
+    OperationResponse,
+    WSMessage,
+    WsMessageData
+} from "../../domain/core/entities/WebSocket.ts";
+import { broadcast, sendMessage } from "../../domain/core/vo/WebSocketOperationConsts.ts";
 
 export interface WSConfig {
     url: string;
-    apiUrl:string;
+    apiUrl: string;
     onError?: (error: Error) => void;
     onConnect?: () => void;
     onDisconnect?: () => void;
 }
 
-export const createWSClientImpl = (config: WSConfig): WSClient => {
+export const createWebSocketServiceImpl = (config: WSConfig): WebSocketService => {
     let socket: WebSocket | null = null;
-    const messageCallbacks: Array<(msg: WSMessage) => void> = [];
 
-    const cleanup = () => {
-        if (socket) {
-            socket.onopen = null;
-            socket.onerror = null;
-            socket.onmessage = null;
-            socket.onclose = null;
-            socket.close();
-            socket = null;
-        }
-        messageCallbacks.length = 0; // Очищаем массив
+    const broadcastCallbacks: Array<(data: WsMessageData) => void> = [];
+    const sendMessageCallbacks: Array<() => void> = [];
+
+    const isConnected = (): boolean => {
+        return socket?.readyState === WebSocket.OPEN;
     };
 
-    const notifyCallbacks = (message: WSMessage) => {
-        messageCallbacks.forEach(cb => cb(message));
+    const cleanup = (): void => {
+        if (!socket) return;
+
+        socket.onopen = null;
+        socket.onerror = null;
+        socket.onmessage = null;
+        socket.onclose = null;
+
+        if (socket.readyState === WebSocket.OPEN || socket.readyState === WebSocket.CONNECTING) {
+            socket.close();
+        }
+
+        socket = null;
+        broadcastCallbacks.length = 0;
+        sendMessageCallbacks.length = 0;
+    };
+
+    const handleSocketMessage = (event: MessageEvent): void => {
+        try {
+            const response = JSON.parse(event.data) as OperationResponse;
+
+            switch (response.operation_type) {
+                case broadcast:
+                    // console.log("Broadcast data:", response.data as WsMessageData);
+                    if (response.data) {
+                        // console.log("Calling broadcast callback");
+                        broadcastCallbacks.forEach(cb => cb(response.data as WsMessageData));
+                    }
+                    break;
+                case sendMessage:
+                    console.log("Sent successfully! Message:", response.data as WsMessageData);
+                    sendMessageCallbacks.forEach(cb => cb());
+                    break;
+
+                default:
+                    console.warn("Unknown operation type:", response.operation_type);
+            }
+        } catch (error) {
+            console.error("Message parsing error:", error);
+            config.onError?.(new Error("Failed to parse message"));
+        }
+    };
+
+    const handleSocketError = (event: Event): void => {
+        const error = new Error("WebSocket connection error");
+        console.error("WebSocket error:", error, "event:", event);
+        config.onError?.(error);
+        cleanup();
     };
 
     return {
-        async connect(user_id:string): Promise<void> {
+        async connect(user_id: string): Promise<void> {
             if (socket) {
-                console.warn("WebSocket уже подключен");
-                return;
+                if (isConnected()) {
+                    console.warn("WebSocket already connected");
+                    return;
+                }
+                cleanup();
             }
 
-            socket = new WebSocket(config.url + `/${user_id}`);
-
             return new Promise((resolve, reject) => {
-                if (!socket) return;
+                socket = new WebSocket(`${config.url}/${user_id}`);
 
                 socket.onopen = () => {
-                    console.log("WebSocket подключен");
+                    console.log("WebSocket connected");
                     config.onConnect?.();
                     resolve();
                 };
 
                 socket.onerror = (event) => {
-                    const error = new Error("WebSocket connection failed");
-                    console.error("WebSocket ошибка:", error, "Event type: ",event.type);
-                    config.onError?.(error);
-                    cleanup();
-                    reject(error);
+                    handleSocketError(event);
+                    reject(new Error("Connection failed"));
                 };
 
-                socket.onmessage = (event) => {
-                    try {
-                        const message = JSON.parse(event.data) as WSMessage;
-                        notifyCallbacks(message);
-                    } catch (e) {
-                        console.error("Ошибка парсинга сообщения:", e);
-                        config.onError?.(new Error("Failed to parse message"));
-                    }
-                };
+                socket.onmessage = handleSocketMessage;
 
                 socket.onclose = () => {
-                    console.log("WebSocket закрыт");
+                    console.log("WebSocket closed");
                     config.onDisconnect?.();
-                    cleanup();
                 };
             });
         },
 
-        disconnect() {
+        disconnect(): void {
             cleanup();
         },
 
-        onMessage(callback: (msg: WSMessage) => void) {
-            messageCallbacks.push(callback);
-            // Возвращаем функцию для отписки
+        onBroadcast(callback: (data: WsMessageData) => void): () => void {
+            broadcastCallbacks.push(callback);
             return () => {
-                const index = messageCallbacks.indexOf(callback);
+                const index = broadcastCallbacks.indexOf(callback);
                 if (index !== -1) {
-                    messageCallbacks.splice(index, 1);
+                    broadcastCallbacks.splice(index, 1);
                 }
             };
         },
 
-        send(message: WSMessage) {
-            if (!socket || socket.readyState !== WebSocket.OPEN) {
+        onSendMessageResponse(callback: () => void): () => void {
+            sendMessageCallbacks.push(callback);
+            return () => {
+                const index = sendMessageCallbacks.indexOf(callback);
+                if (index !== -1) {
+                    sendMessageCallbacks.splice(index, 1);
+                }
+            };
+        },
+
+        send(message: WSMessage): void {
+            if (!isConnected()) {
                 throw new Error("WebSocket is not connected");
             }
-            socket.send(JSON.stringify(message));
+            socket?.send(JSON.stringify(message));
+        },
+
+        sendWithOperation(operation: Operation): void {
+            if (!isConnected()) {
+                throw new Error("WebSocket is not connected");
+            }
+            socket?.send(JSON.stringify(operation));
         }
     };
 };

@@ -1,12 +1,13 @@
-import React, { useState, useEffect } from 'react';
+import React, {useEffect, useState} from 'react';
 import Sidebar from '../../components/chat/Sidebar/Sidebar';
 import MessageList from '../../components/chat/MessageList/MessageList';
 import ChatInput from '../../components/chat/ChatInput/ChatInput';
 import styles from './Chat.module.css';
 import {useChatContext} from "../../../application/chat/UseContext.ts";
-import type { ChatPreview, Message } from "../../../domain/core/entities/ChatPreview.ts";
+import type {ChatPreview, Message} from "../../../domain/core/entities/ChatPreview.ts";
 import {useWebSocketContext} from "../../../application/ws/UseContext.ts";
-import type {WSMessage, WsMessageData} from "../../../domain/core/entities/WSClient.ts";
+import type {Operation, WsMessageData} from "../../../domain/core/entities/WebSocket.ts";
+import {sendMessage} from "../../../domain/core/vo/WebSocketOperationConsts.ts";
 
 interface ChatProps {
     user_id: string;
@@ -92,15 +93,14 @@ const Chat: React.FC<ChatProps> = ({ user_id }) => {
     }, [currentChat, user_id, chatContext]);
 
     useEffect(() => {
-        if (!user_id || !currentChat) return;
+        if (!user_id) return;
 
         wsContext.client.connect(user_id);
 
-        const handleNewMessage = (msg: WSMessage) => {
-            console.log('New WS message:', msg);
-
+        const handleNewMessage = (msg: WsMessageData) => {
+            // console.log("New message:",msg);
             try {
-                const messageData = msg as unknown as WsMessageData;
+                const messageData = msg as WsMessageData;
 
                 if (messageData.chat_id !== currentChat?.chat_id) {
                     console.log('Message for another chat, ignoring');
@@ -163,30 +163,27 @@ const Chat: React.FC<ChatProps> = ({ user_id }) => {
                             : chat
                     );
 
-                    const sortedChats = [...updatedChats].sort((a, b) => {
+                    // if (sortedChats[0]?.chat_id !== currentChat.chat_id) {
+                    //     setCurrentChat(sortedChats[0]);
+                    // }
+
+                    return [...updatedChats].sort((a, b) => { // sorted chats
                         const getTime = (chat: ChatPreview) =>
                             chat.last_message?.timestamp
                                 ? new Date(chat.last_message.timestamp).getTime()
                                 : 0;
                         return getTime(b) - getTime(a);
                     });
-
-                    // if (sortedChats[0]?.chat_id !== currentChat.chat_id) {
-                    //     setCurrentChat(sortedChats[0]);
-                    // }
-
-                    return sortedChats;
                 });
             } catch (err) {
                 console.error('Error processing WS message:', err);
             }
         };
 
-        wsContext.client.onMessage(handleNewMessage);
-
-        wsContext.client.connect(user_id).catch((err) => {
-            console.error("WebSocket connection error:", err);
+        wsContext.client.connect(user_id).catch(() => {
+            console.error("WebSocket connection error");
         });
+        wsContext.client.onBroadcast(handleNewMessage);
 
         return () => {
             wsContext.client.disconnect();
@@ -219,7 +216,20 @@ const Chat: React.FC<ChatProps> = ({ user_id }) => {
                     : chat
             ));
 
-            await chatContext.chatUseCase.sendSync(newMessage, currentChat.chat_id);
+            const messageOperation: Operation = {
+                id: Date.now(),
+                operation: sendMessage,
+                body: {
+                    user_id: user_id,
+                    chat_id: currentChat.chat_id,
+                    content: text,
+                } as WsMessageData,
+            } as Operation;
+
+            wsContext.client.sendWithOperation(messageOperation);
+
+            // TODO remove http uc after saving msg from ws realisation
+            // await chatContext.chatUseCase.sendSync(newMessage, currentChat.chat_id);
         } catch (err) {
             console.error('Failed to send message:', err);
             setMessages(prev => prev.slice(0, -1));

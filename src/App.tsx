@@ -17,7 +17,7 @@ import {ChatProvider} from "./application/chat/Provider.tsx";
 import type {AuthUseCase} from "./application/auth/Port.ts";
 import {AuthProvider} from "./application/auth/Provider.tsx";
 import {WebSocketProvider} from "./application/ws/Provider.tsx";
-import {createWSClientImpl, type WSConfig} from "./infrastructure/ws/WebSocket.ts";
+import {createWebSocketServiceImpl, type WSConfig} from "./infrastructure/ws/WebSocket.ts";
 import type {ApiConfig} from "./infrastructure/api/Config.ts";
 
 const AppContent = () => {
@@ -82,7 +82,7 @@ function App() {
     const authUseCase:AuthUseCase = createAuthUseCase(authServiceImpl);
     const chatUseCase:ChatUseCase = createChatUseCase(chatServiceImpl);
 
-    const wsClientImpl = createWSClientImpl(wsConfig);
+    const wsClientImpl = createWebSocketServiceImpl(wsConfig);
 
     return (
         <AuthProvider authUseCase={authUseCase}>

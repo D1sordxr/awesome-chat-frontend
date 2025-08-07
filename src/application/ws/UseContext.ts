@@ -1,8 +1,8 @@
 import { createContext, useContext } from "react";
-import type { WSClient } from "../../domain/core/entities/WSClient";
+import type {WebSocketService} from "../../domain/core/ports/WebSocketService.ts";
 
 interface WebSocketContextValue {
-    client: WSClient;
+    client: WebSocketService;
 }
 
 export const WebSocketContext = createContext<WebSocketContextValue | null>(null);
